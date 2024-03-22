@@ -1,8 +1,10 @@
 //! Chapter 4. Base Extension (EID #0x10).
 
 /// Extension ID for RISC-V SBI Base extension.
-pub const EID_BASE: usize = 0x10;
+pub const EID_BASE: usize = 0x10 + RUX_EID_OFFSET;
 pub use fid::*;
+
+use crate::RUX_EID_OFFSET;
 
 /// Default probe value for the target SBI extension is unavailable.
 pub const UNAVAILABLE_EXTENSION: usize = 0;

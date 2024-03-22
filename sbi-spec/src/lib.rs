@@ -17,6 +17,10 @@
 #![no_std]
 #![deny(missing_docs, unsafe_code, unstable_features)]
 
+/// The 100% standard-incompatible offset used to distinguish between SBI call and Linux syscall.
+/// We choose 1000 because all linux syscalls have their ids < 999.
+pub const RUX_EID_OFFSET: usize = 1000;
+
 // §3
 pub mod binary;
 // §4
@@ -49,13 +53,14 @@ pub mod sta;
 
 /// Converts SBI EID from str.
 const fn eid_from_str(name: &str) -> i32 {
-    match *name.as_bytes() {
+    let orig = match *name.as_bytes() {
         [a] => i32::from_be_bytes([0, 0, 0, a]),
         [a, b] => i32::from_be_bytes([0, 0, a, b]),
         [a, b, c] => i32::from_be_bytes([0, a, b, c]),
         [a, b, c, d] => i32::from_be_bytes([a, b, c, d]),
         _ => unreachable!(),
-    }
+    };
+    orig + RUX_EID_OFFSET as i32
 }
 
 /// Checks during compilation, and provides an item list for developers.
@@ -64,6 +69,14 @@ mod tests {
     use static_assertions::{
         assert_eq_align, assert_eq_size, assert_fields, assert_impl_all, const_assert_eq,
     };
+
+    use crate::RUX_EID_OFFSET;
+
+    #[test]
+    fn test_offset() {
+        const_assert_eq!(1000, RUX_EID_OFFSET);
+    }
+
     // §3
     #[test]
     fn test_binary() {
@@ -89,7 +102,7 @@ mod tests {
     #[test]
     fn test_base() {
         use crate::base::*;
-        const_assert_eq!(0x10, EID_BASE);
+        const_assert_eq!(0x10 + RUX_EID_OFFSET, EID_BASE);
         const_assert_eq!(0, GET_SBI_SPEC_VERSION);
         const_assert_eq!(1, GET_SBI_IMPL_ID);
         const_assert_eq!(2, GET_SBI_IMPL_VERSION);
@@ -110,35 +123,35 @@ mod tests {
     #[test]
     fn test_legacy() {
         use crate::legacy::*;
-        const_assert_eq!(0, LEGACY_SET_TIMER);
-        const_assert_eq!(1, LEGACY_CONSOLE_PUTCHAR);
-        const_assert_eq!(2, LEGACY_CONSOLE_GETCHAR);
-        const_assert_eq!(3, LEGACY_CLEAR_IPI);
-        const_assert_eq!(4, LEGACY_SEND_IPI);
-        const_assert_eq!(5, LEGACY_REMOTE_FENCE_I);
-        const_assert_eq!(6, LEGACY_REMOTE_SFENCE_VMA);
-        const_assert_eq!(7, LEGACY_REMOTE_SFENCE_VMA_ASID);
-        const_assert_eq!(8, LEGACY_SHUTDOWN);
+        const_assert_eq!(0 + RUX_EID_OFFSET, LEGACY_SET_TIMER);
+        const_assert_eq!(1 + RUX_EID_OFFSET, LEGACY_CONSOLE_PUTCHAR);
+        const_assert_eq!(2 + RUX_EID_OFFSET, LEGACY_CONSOLE_GETCHAR);
+        const_assert_eq!(3 + RUX_EID_OFFSET, LEGACY_CLEAR_IPI);
+        const_assert_eq!(4 + RUX_EID_OFFSET, LEGACY_SEND_IPI);
+        const_assert_eq!(5 + RUX_EID_OFFSET, LEGACY_REMOTE_FENCE_I);
+        const_assert_eq!(6 + RUX_EID_OFFSET, LEGACY_REMOTE_SFENCE_VMA);
+        const_assert_eq!(7 + RUX_EID_OFFSET, LEGACY_REMOTE_SFENCE_VMA_ASID);
+        const_assert_eq!(8 + RUX_EID_OFFSET, LEGACY_SHUTDOWN);
     }
     // §6
     #[test]
     fn test_time() {
         use crate::time::*;
-        const_assert_eq!(0x54494D45, EID_TIME);
+        const_assert_eq!(0x54494D45 + RUX_EID_OFFSET, EID_TIME);
         const_assert_eq!(0, SET_TIMER);
     }
     // §7
     #[test]
     fn test_spi() {
         use crate::spi::*;
-        const_assert_eq!(0x735049, EID_SPI);
+        const_assert_eq!(0x735049 + RUX_EID_OFFSET, EID_SPI);
         const_assert_eq!(0, SEND_IPI);
     }
     // §8
     #[test]
     fn test_rfnc() {
         use crate::rfnc::*;
-        const_assert_eq!(0x52464E43, EID_RFNC);
+        const_assert_eq!(0x52464E43 + RUX_EID_OFFSET, EID_RFNC);
         const_assert_eq!(0, REMOTE_FENCE_I);
         const_assert_eq!(1, REMOTE_SFENCE_VMA);
         const_assert_eq!(2, REMOTE_SFENCE_VMA_ASID);
@@ -151,7 +164,7 @@ mod tests {
     #[test]
     fn test_hsm() {
         use crate::hsm::*;
-        const_assert_eq!(0x48534D, EID_HSM);
+        const_assert_eq!(0x48534D + RUX_EID_OFFSET, EID_HSM);
         const_assert_eq!(0, hart_state::STARTED);
         const_assert_eq!(1, hart_state::STOPPED);
         const_assert_eq!(2, hart_state::START_PENDING);
@@ -170,7 +183,7 @@ mod tests {
     #[test]
     fn test_srst() {
         use crate::srst::*;
-        const_assert_eq!(0x53525354, EID_SRST);
+        const_assert_eq!(0x53525354 + RUX_EID_OFFSET, EID_SRST);
         const_assert_eq!(0, RESET_TYPE_SHUTDOWN);
         const_assert_eq!(1, RESET_TYPE_COLD_REBOOT);
         const_assert_eq!(2, RESET_TYPE_WARM_REBOOT);
@@ -182,7 +195,7 @@ mod tests {
     #[test]
     fn test_pmu() {
         use crate::pmu::*;
-        const_assert_eq!(0x504D55, EID_PMU);
+        const_assert_eq!(0x504D55 + RUX_EID_OFFSET, EID_PMU);
         const_assert_eq!(0, NUM_COUNTERS);
         const_assert_eq!(1, COUNTER_GET_INFO);
         const_assert_eq!(2, COUNTER_CONFIG_MATCHING);
@@ -252,7 +265,7 @@ mod tests {
     #[test]
     fn test_dbcn() {
         use crate::dbcn::*;
-        const_assert_eq!(0x4442434E, EID_DBCN);
+        const_assert_eq!(0x4442434E + RUX_EID_OFFSET, EID_DBCN);
         const_assert_eq!(0, CONSOLE_WRITE);
         const_assert_eq!(1, CONSOLE_READ);
         const_assert_eq!(2, CONSOLE_WRITE_BYTE);
@@ -261,14 +274,14 @@ mod tests {
     #[test]
     fn test_susp() {
         use crate::susp::*;
-        const_assert_eq!(0x53555350, EID_SUSP);
+        const_assert_eq!(0x53555350 + RUX_EID_OFFSET, EID_SUSP);
         const_assert_eq!(0, SUSPEND);
     }
     // §14
     #[test]
     fn test_cppc() {
         use crate::cppc::*;
-        const_assert_eq!(0x43505043, EID_CPPC);
+        const_assert_eq!(0x43505043 + RUX_EID_OFFSET, EID_CPPC);
         const_assert_eq!(0, PROBE);
         const_assert_eq!(1, READ);
         const_assert_eq!(2, READ_HI);
@@ -278,7 +291,7 @@ mod tests {
     #[test]
     fn test_nacl() {
         use crate::nacl::*;
-        const_assert_eq!(0x4E41434C, EID_NACL);
+        const_assert_eq!(0x4E41434C + RUX_EID_OFFSET, EID_NACL);
         const_assert_eq!(0, PROBE_FEATURE);
         const_assert_eq!(1, SET_SHMEM);
         const_assert_eq!(2, SYNC_CSR);
@@ -312,7 +325,7 @@ mod tests {
     #[test]
     fn test_sta() {
         use crate::sta::*;
-        const_assert_eq!(0x535441, EID_STA);
+        const_assert_eq!(0x535441 + RUX_EID_OFFSET, EID_STA);
         const_assert_eq!(0, SET_SHMEM);
     }
 }

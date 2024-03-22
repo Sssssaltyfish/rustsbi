@@ -1,12 +1,12 @@
 [package]
 name = "sbi-spec"
-description = "Definitions and constants in RISC-V Supervisor Binary Interface (RISC-V SBI)"
+description = "A patched version of the original sbi-spec to support RuxOS"
 version = "0.0.7"
 authors = ["YdrMaster <ydrml@hotmail.com>", "Luo Jia <me@luojia.cc>"]
 documentation = "https://docs.rs/sbi-spec"
-edition.workspace = true
-license.workspace = true
-repository.workspace = true
+edition = "2021"
+license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL2"
+repository = "https://github.com/Sssssaltyfish/rustsbi"
 readme = "README.md"
 keywords = ["riscv", "sbi", "rustsbi"]
 categories = ["os", "embedded", "hardware-support", "no-std"]
